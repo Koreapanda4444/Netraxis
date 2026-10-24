@@ -39,6 +39,10 @@ Status PlatformChange::validate() const {
         return success();
     },value);
 }
+Result<PlatformChangeValue> INetworkPlatform::configuration(PlatformFeature, const QString &, const TaskContext &context) {
+    const auto ready=context.check();
+    return Result<PlatformChangeValue>::failure(ready?Error{ErrorCode::Unsupported,"This provider cannot capture restorable configuration.",false,"platform"}:ready.error());
+}
 QString platformFeatureName(PlatformFeature feature) {
     switch(feature) {
     case PlatformFeature::Interfaces:return "Interfaces";

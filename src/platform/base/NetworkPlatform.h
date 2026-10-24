@@ -46,6 +46,7 @@ public:
     virtual Result<QVector<Observation<InterfaceAddress>>> addresses(const QString &nativeId, const TaskContext &context) = 0;
     virtual Result<QVector<Observation<Route>>> routes(const TaskContext &context) = 0;
     virtual Result<QVector<Observation<ResolverConfiguration>>> resolvers(const TaskContext &context) = 0;
+    virtual Result<PlatformChangeValue> configuration(PlatformFeature feature, const QString &nativeId, const TaskContext &context);
     virtual Status apply(const PlatformChange &change, const PrivilegePermit &permit, const TaskContext &context) = 0;
 };
 QString platformFeatureName(PlatformFeature feature);

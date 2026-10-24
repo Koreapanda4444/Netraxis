@@ -30,7 +30,10 @@ Result<NormalizedInterface> NativeNormalization::normalizeInterface(const Native
         if(!parsed){issue("address",parsed.error().message);continue;}
         auto address=parsed.value();
         if(!address.isV4()&&address.native().isLinkLocal()&&address.native().scopeId().isEmpty()){
-            auto scoped=address.native();scoped.setScopeId(native.nativeId);address=IpAddress::parse(scoped.toString()).value();
+            auto scoped=address.native();scoped.setScopeId(native.nativeId);
+            auto parsedScope=IpAddress::parse(scoped.toString());
+            if(!parsedScope){issue("address_scope",parsedScope.error().message);continue;}
+            address=parsedScope.value();
         }
         InterfaceAddress assigned{address,raw.prefix,raw.origin,raw.preferredUntil,raw.validUntil};
         auto valid=assigned.validate();if(!valid){issue("address",valid.error().message);continue;}
