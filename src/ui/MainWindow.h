@@ -9,11 +9,14 @@ class QSpinBox;
 class QComboBox;
 namespace netraxis {
 class StatusSurface;
+class WorkspacePage;
+class CoreRepository;
 class MainWindow final : public QMainWindow {
     Q_OBJECT
 public:
     MainWindow(TaskManager &tasks, SettingsStore &store, RuntimeSettings &settings);
     void showError(const Error &error);
+    void setRepository(CoreRepository *repository);
 signals:
     void settingsChanged();
 protected:
@@ -25,6 +28,7 @@ private:
     TaskManager &tasks_;
     SettingsStore &store_;
     RuntimeSettings &settings_;
+    WorkspacePage *workspaces_ = nullptr;
     QLabel *pending_ = nullptr;
     StatusSurface *diagnosticStatus_ = nullptr;
     QLabel *diagnosticResult_ = nullptr;

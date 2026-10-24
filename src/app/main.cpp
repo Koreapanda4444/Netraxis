@@ -9,6 +9,8 @@
 #include "core/Settings.h"
 #include "storage/SqliteStore.h"
 #include "storage/Schema.h"
+#include "storage/CoreRepository.h"
+#include <memory>
 #include "ui/MainWindow.h"
 
 int main(int argc, char *argv[]) {
@@ -49,7 +51,10 @@ int main(int argc, char *argv[]) {
     const auto databasePath=netraxis::SqliteStore::defaultPath();
     const auto storage=databasePath?database.open(databasePath.value()):netraxis::Status::failure(databasePath.error());
     const auto schema=storage?netraxis::Schema::migrate(database):storage;
+    std::unique_ptr<netraxis::CoreRepository> repository;
+    if(schema)repository=std::make_unique<netraxis::CoreRepository>(database);
     netraxis::MainWindow window(tasks, settingsStore, settings);
+    window.setRepository(repository.get());
     QObject::connect(&window, &netraxis::MainWindow::settingsChanged, &app, [&] {
         logger.setLevel(settings.logLevel);
         logger.write(netraxis::LogLevel::Info, netraxis::LogEvent::SettingsChanged);

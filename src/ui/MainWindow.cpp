@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 #include "StatusSurface.h"
+#include "WorkspacePage.h"
 #include "core/Paths.h"
 #include "platform/SystemInfo.h"
 #include <QCloseEvent>
@@ -40,7 +41,7 @@ MainWindow::MainWindow(TaskManager &tasks, SettingsStore &store, RuntimeSettings
     navigation->setMinimumWidth(145);
     auto *pages = new QStackedWidget(splitter);
     pages->addWidget(dashboard());
-    pages->addWidget(messagePage(tr("Workspaces"), tr("No workspace inventory is loaded. Network identification is not available in this build.")));
+    workspaces_=new WorkspacePage;pages->addWidget(workspaces_);
     pages->addWidget(messagePage(tr("Devices"), tr("Device collection has not run. An empty inventory does not indicate that the network has no devices.")));
     pages->addWidget(diagnostics()); pages->addWidget(settingsPage());
     splitter->setStretchFactor(0, 0);splitter->setStretchFactor(1, 1);splitter->setSizes({190,910});
@@ -117,6 +118,9 @@ QWidget *MainWindow::settingsPage() {
         settings_=next;tasks_.setConcurrency(next.workerLimit);emit settingsChanged();statusBar()->showMessage(tr("Settings saved."),5000);
     });
     return page;
+}
+void MainWindow::setRepository(CoreRepository *repository) {
+    workspaces_->setRepository(repository);
 }
 void MainWindow::showError(const Error &error) {
     auto *message = new QMessageBox(QMessageBox::Warning,tr("Netraxis"),QString(),QMessageBox::Close,this);
