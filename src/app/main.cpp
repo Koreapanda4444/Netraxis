@@ -7,6 +7,7 @@
 #include "core/Logger.h"
 #include "core/TaskManager.h"
 #include "core/Settings.h"
+#include "storage/SqliteStore.h"
 #include "ui/MainWindow.h"
 
 int main(int argc, char *argv[]) {
@@ -43,6 +44,9 @@ int main(int argc, char *argv[]) {
     netraxis::TaskManager tasks;
     tasks.setConcurrency(settings.workerLimit);
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::stopping, &tasks, &netraxis::TaskManager::shutdown);
+    netraxis::SqliteStore database;
+    const auto databasePath=netraxis::SqliteStore::defaultPath();
+    const auto storage=databasePath?database.open(databasePath.value()):netraxis::Status::failure(databasePath.error());
     netraxis::MainWindow window(tasks, settingsStore, settings);
     QObject::connect(&window, &netraxis::MainWindow::settingsChanged, &app, [&] {
         logger.setLevel(settings.logLevel);
@@ -55,6 +59,7 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(&app, &QCoreApplication::aboutToQuit, &lifecycle, &netraxis::ApplicationLifecycle::shutdown);
     if (!lifecycle.errorString().isEmpty()) window.statusBar()->showMessage(lifecycle.errorString());
+    if (!storage) window.showError(storage.error());
     if (!logging) window.showError(logging.error());
     if (!loadedSettings) window.showError(loadedSettings.error());
     window.show();
