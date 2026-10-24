@@ -1,5 +1,7 @@
 # Netraxis
 
+[English](README.md) | [한국어](README.ko.md)
+
 A C++20 / Qt 6 Widgets desktop application for unified network and internet management.
 
 The foundation and persistence stages (001–019) are implemented: application lifecycle, bounded asynchronous work, validated settings, privacy-safe event logging, network domain types, evidence metadata, SQLite migrations and repositories, saved workspace management, and observation retention controls.
