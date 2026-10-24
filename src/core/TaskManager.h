@@ -16,6 +16,7 @@ public:
         : cancelled_(std::move(cancelled)), deadline_(deadline) {}
     bool cancelled() const { return cancelled_->load(); }
     bool expired() const { return deadline_.hasExpired(); }
+    qint64 remainingTimeMs() const { return deadline_.remainingTime(); }
     bool shouldStop() const { return cancelled() || expired(); }
     Status check() const;
 private:
