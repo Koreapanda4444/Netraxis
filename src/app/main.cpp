@@ -6,6 +6,7 @@
 #include "ApplicationLifecycle.h"
 #include "core/Logger.h"
 #include "core/TaskManager.h"
+#include "core/Settings.h"
 #include "ui/MainWindow.h"
 
 int main(int argc, char *argv[]) {
@@ -35,7 +36,12 @@ int main(int argc, char *argv[]) {
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::stopping, &app, [&logger] {
         logger.write(netraxis::LogLevel::Info, netraxis::LogEvent::Stopping);
     });
+    netraxis::SettingsStore settingsStore;
+    const auto loadedSettings = settingsStore.load();
+    auto settings = loadedSettings ? loadedSettings.value() : netraxis::RuntimeSettings{};
+    logger.setLevel(settings.logLevel);
     netraxis::TaskManager tasks;
+    tasks.setConcurrency(settings.workerLimit);
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::stopping, &tasks, &netraxis::TaskManager::shutdown);
     netraxis::MainWindow window;
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::activationRequested, &window, [&window] {
@@ -46,6 +52,7 @@ int main(int argc, char *argv[]) {
     QObject::connect(&app, &QCoreApplication::aboutToQuit, &lifecycle, &netraxis::ApplicationLifecycle::shutdown);
     if (!lifecycle.errorString().isEmpty()) window.statusBar()->showMessage(lifecycle.errorString());
     if (!logging) window.statusBar()->showMessage(logging.error().message);
+    if (!loadedSettings) window.statusBar()->showMessage(loadedSettings.error().message);
     window.show();
     return app.exec();
 }
