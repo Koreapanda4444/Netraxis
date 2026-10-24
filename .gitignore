@@ -7,3 +7,7 @@ CMakeUserPresets.json
 *.db-shm
 *.log
 .DS_Store
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite.migration-*

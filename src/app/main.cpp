@@ -8,6 +8,7 @@
 #include "core/TaskManager.h"
 #include "core/Settings.h"
 #include "storage/SqliteStore.h"
+#include "storage/Schema.h"
 #include "ui/MainWindow.h"
 
 int main(int argc, char *argv[]) {
@@ -47,6 +48,7 @@ int main(int argc, char *argv[]) {
     netraxis::SqliteStore database;
     const auto databasePath=netraxis::SqliteStore::defaultPath();
     const auto storage=databasePath?database.open(databasePath.value()):netraxis::Status::failure(databasePath.error());
+    const auto schema=storage?netraxis::Schema::migrate(database):storage;
     netraxis::MainWindow window(tasks, settingsStore, settings);
     QObject::connect(&window, &netraxis::MainWindow::settingsChanged, &app, [&] {
         logger.setLevel(settings.logLevel);
@@ -59,7 +61,7 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(&app, &QCoreApplication::aboutToQuit, &lifecycle, &netraxis::ApplicationLifecycle::shutdown);
     if (!lifecycle.errorString().isEmpty()) window.statusBar()->showMessage(lifecycle.errorString());
-    if (!storage) window.showError(storage.error());
+    if (!schema) window.showError(schema.error());
     if (!logging) window.showError(logging.error());
     if (!loadedSettings) window.showError(loadedSettings.error());
     window.show();
