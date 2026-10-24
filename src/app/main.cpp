@@ -43,7 +43,11 @@ int main(int argc, char *argv[]) {
     netraxis::TaskManager tasks;
     tasks.setConcurrency(settings.workerLimit);
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::stopping, &tasks, &netraxis::TaskManager::shutdown);
-    netraxis::MainWindow window;
+    netraxis::MainWindow window(tasks, settingsStore, settings);
+    QObject::connect(&window, &netraxis::MainWindow::settingsChanged, &app, [&] {
+        logger.setLevel(settings.logLevel);
+        logger.write(netraxis::LogLevel::Info, netraxis::LogEvent::SettingsChanged);
+    });
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::activationRequested, &window, [&window] {
         window.showNormal();
         window.raise();
