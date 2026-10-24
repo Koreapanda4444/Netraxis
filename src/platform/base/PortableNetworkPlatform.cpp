@@ -1,11 +1,10 @@
 #include "PortableNetworkPlatform.h"
 #include <QNetworkInterface>
-#include <QRegularExpression>
+#include "NativeNormalization.h"
 
 namespace netraxis {
 namespace {
 Error unavailable(){return {ErrorCode::Unsupported,"This native configuration provider has not been implemented for this build.",false,"platform"};}
-QUuid identity(const QString &key){return QUuid::createUuidV5(QUuid("69ddc6df-fb83-4dc6-a1a8-ecb382791214"),key.toUtf8());}
 InterfaceKind kind(QNetworkInterface::InterfaceType type){
     switch(type){case QNetworkInterface::Ethernet:return InterfaceKind::Ethernet;case QNetworkInterface::Wifi:return InterfaceKind::Wireless;case QNetworkInterface::Loopback:return InterfaceKind::Loopback;case QNetworkInterface::Virtual:return InterfaceKind::Virtual;case QNetworkInterface::Ppp:return InterfaceKind::Tunnel;default:return InterfaceKind::Unknown;}
 }
@@ -24,22 +23,16 @@ Result<QVector<Observation<NetworkInterface>>> PortableNetworkPlatform::interfac
     for(const auto &native:nativeInterfaces){
         ready=context.check();if(!ready)return Result<QVector<Observation<NetworkInterface>>>::failure(ready.error());
         if(!native.isValid())continue;
-        NetworkInterface value;value.nativeId=QString::number(native.index());value.hostId=identity(descriptor_.hostIdentity);
-        value.id=identity(descriptor_.hostIdentity+"/"+value.nativeId+"/"+native.name());
-        value.name=native.humanReadableName().isEmpty()?native.name():native.humanReadableName();value.kind=kind(native.type());
-        value.operational=native.flags().testFlag(QNetworkInterface::IsRunning);
-        if(native.maximumTransmissionUnit()>0)value.mtu=quint32(native.maximumTransmissionUnit());
-        const auto hardware=native.hardwareAddress().remove(':').remove('-');
-        static const QRegularExpression hex("^(?:[a-fA-F0-9]{2}){1,32}$");
-        if(hex.match(hardware).hasMatch())value.hardwareAddress=QByteArray::fromHex(hardware.toLatin1());
-        for(const auto &entry:native.addressEntries()){
-            const auto address=IpAddress::parse(entry.ip().toString());
-            if(!address||entry.prefixLength()<0||entry.prefixLength()>address.value().bitCount())continue;
-            value.addresses.push_back({address.value(),entry.prefixLength(),AddressOrigin::Unknown,{},{}});
-        }
-        const auto valid=value.validate();if(!valid)return Result<QVector<Observation<NetworkInterface>>>::failure(valid.error());
-        Evidence evidence{QUuid::createUuid(),value.id,EvidenceKind::Observed,"Qt.QNetworkInterface",descriptor_.name,observed,{},10000,Availability::ReadOnly,{}};
-        values.push_back({value,evidence});
+        NativeInterfaceRecord record;
+        record.nativeId=QString::number(native.index());
+        record.name=native.humanReadableName().isEmpty()?native.name():native.humanReadableName();
+        record.kind=kind(native.type());record.running=native.flags().testFlag(QNetworkInterface::IsRunning);
+        if(native.maximumTransmissionUnit()>0)record.mtu=quint32(native.maximumTransmissionUnit());
+        record.hardwareAddress=native.hardwareAddress();record.source="Qt.QNetworkInterface";
+        for(const auto &entry:native.addressEntries())record.addresses.push_back({entry.ip().toString(),entry.prefixLength(),AddressOrigin::Unknown,{},{}});
+        auto normalized=NativeNormalization::normalizeInterface(record,descriptor_,observed);
+        if(!normalized)return Result<QVector<Observation<NetworkInterface>>>::failure(normalized.error());
+        values.push_back(std::move(normalized.value().observation));
     }
     ready=context.check();if(!ready)return Result<QVector<Observation<NetworkInterface>>>::failure(ready.error());
     return Result<QVector<Observation<NetworkInterface>>>::success(values);
