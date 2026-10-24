@@ -1,4 +1,5 @@
 #include "ApplicationLifecycle.h"
+#include "core/Paths.h"
 #include <QCryptographicHash>
 #include <QDir>
 #include <QLocalSocket>
@@ -16,11 +17,12 @@ ApplicationLifecycle::ApplicationLifecycle(QObject *parent) : QObject(parent) {
 }
 ApplicationLifecycle::Start ApplicationLifecycle::start() {
     if (started_) return Start::Primary;
-    const auto path = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
-    if (path.isEmpty() || !QDir().mkpath(path)) {
-        error_ = tr("Cannot create the application data directory.");
+    const auto directory = applicationDataDirectory();
+    if (!directory) {
+        error_ = directory.error().message;
         return Start::Failed;
     }
+    const auto path = directory.value();
     const auto name = "netraxis-" + QCryptographicHash::hash(path.toUtf8(), QCryptographicHash::Sha256).toHex().left(24);
     lock_ = std::make_unique<QLockFile>(path + "/instance.lock");
     lock_->setStaleLockTime(0);
