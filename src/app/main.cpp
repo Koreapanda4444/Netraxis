@@ -55,8 +55,8 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(&app, &QCoreApplication::aboutToQuit, &lifecycle, &netraxis::ApplicationLifecycle::shutdown);
     if (!lifecycle.errorString().isEmpty()) window.statusBar()->showMessage(lifecycle.errorString());
-    if (!logging) window.statusBar()->showMessage(logging.error().message);
-    if (!loadedSettings) window.statusBar()->showMessage(loadedSettings.error().message);
+    if (!logging) window.showError(logging.error());
+    if (!loadedSettings) window.showError(loadedSettings.error());
     window.show();
     return app.exec();
 }
