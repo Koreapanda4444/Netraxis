@@ -5,6 +5,7 @@
 #include <QDebug>
 #include "ApplicationLifecycle.h"
 #include "core/Logger.h"
+#include "core/TaskManager.h"
 #include "ui/MainWindow.h"
 
 int main(int argc, char *argv[]) {
@@ -34,6 +35,8 @@ int main(int argc, char *argv[]) {
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::stopping, &app, [&logger] {
         logger.write(netraxis::LogLevel::Info, netraxis::LogEvent::Stopping);
     });
+    netraxis::TaskManager tasks;
+    QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::stopping, &tasks, &netraxis::TaskManager::shutdown);
     netraxis::MainWindow window;
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::activationRequested, &window, [&window] {
         window.showNormal();
