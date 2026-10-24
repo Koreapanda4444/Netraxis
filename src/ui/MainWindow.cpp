@@ -1,6 +1,8 @@
 #include "MainWindow.h"
 #include "StatusSurface.h"
 #include "WorkspacePage.h"
+#include "StorageControls.h"
+#include <QScrollArea>
 #include "core/Paths.h"
 #include "platform/SystemInfo.h"
 #include <QCloseEvent>
@@ -109,7 +111,7 @@ QWidget *MainWindow::settingsPage() {
     auto *level = new QComboBox(page);level->addItems({tr("Debug"),tr("Info"),tr("Warning"),tr("Error")});level->setCurrentIndex(int(settings_.logLevel));
     layout->addRow(tr("Concurrent tasks"),workers);layout->addRow(tr("Operation timeout"),timeout);
     layout->addRow(tr("Observation retention"),retention);layout->addRow(tr("Observation storage budget"),capacity);layout->addRow(tr("Log level"),level);
-    auto *policy = new QLabel(tr("Retention and capacity settings will apply when the observation store is available."));policy->setWordWrap(true);layout->addRow(policy);
+
     auto *save = new QPushButton(tr("Save settings"));layout->addRow(save);
     connect(save,&QPushButton::clicked,this,[=,this]{
         auto next=settings_;next.workerLimit=workers->value();next.operationTimeoutMs=timeout->value();next.retentionDays=retention->value();next.storageLimitMiB=capacity->value();next.logLevel=static_cast<LogLevel>(level->currentIndex());
@@ -117,8 +119,14 @@ QWidget *MainWindow::settingsPage() {
         if(!result){statusBar()->showMessage(result.error().message);return;}
         settings_=next;tasks_.setConcurrency(next.workerLimit);emit settingsChanged();statusBar()->showMessage(tr("Settings saved."),5000);
     });
-    return page;
+    storageControls_=new StorageControls(tasks_,settings_,page);layout->addRow(storageControls_);
+    connect(storageControls_,&StorageControls::busyChanged,workspaces_,[this](bool busy){workspaces_->setEnabled(!busy);});
+    connect(storageControls_,&StorageControls::dataChanged,workspaces_,&WorkspacePage::reload);
+    connect(storageControls_,&StorageControls::dataDeleted,this,&MainWindow::dataDeleted);
+    connect(this,&MainWindow::settingsChanged,storageControls_,&StorageControls::cleanNow);
+    auto *scroll=new QScrollArea;scroll->setWidgetResizable(true);scroll->setFrameShape(QFrame::NoFrame);scroll->setWidget(page);return scroll;
 }
+void MainWindow::setDatabasePath(const QString &path){storageControls_->setDatabasePath(path);}
 void MainWindow::setRepository(CoreRepository *repository) {
     workspaces_->setRepository(repository);
 }

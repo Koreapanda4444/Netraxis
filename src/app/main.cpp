@@ -36,7 +36,6 @@ int main(int argc, char *argv[]) {
     }
     netraxis::Logger logger;
     const auto logging = logger.open();
-    if (logging) logger.write(netraxis::LogLevel::Info, netraxis::LogEvent::Started);
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::stopping, &app, [&logger] {
         logger.write(netraxis::LogLevel::Info, netraxis::LogEvent::Stopping);
     });
@@ -44,6 +43,7 @@ int main(int argc, char *argv[]) {
     const auto loadedSettings = settingsStore.load();
     auto settings = loadedSettings ? loadedSettings.value() : netraxis::RuntimeSettings{};
     logger.setLevel(settings.logLevel);
+    if(logging)logger.write(netraxis::LogLevel::Info,netraxis::LogEvent::Started);
     netraxis::TaskManager tasks;
     tasks.setConcurrency(settings.workerLimit);
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::stopping, &tasks, &netraxis::TaskManager::shutdown);
@@ -55,9 +55,12 @@ int main(int argc, char *argv[]) {
     if(schema)repository=std::make_unique<netraxis::CoreRepository>(database);
     netraxis::MainWindow window(tasks, settingsStore, settings);
     window.setRepository(repository.get());
+    if(schema&&loadedSettings)window.setDatabasePath(database.path());
+    QObject::connect(&window,&netraxis::MainWindow::dataDeleted,&app,[&logger]{logger.write(netraxis::LogLevel::Info,netraxis::LogEvent::DataDeleted);});
     QObject::connect(&window, &netraxis::MainWindow::settingsChanged, &app, [&] {
         logger.setLevel(settings.logLevel);
         logger.write(netraxis::LogLevel::Info, netraxis::LogEvent::SettingsChanged);
+        if(schema)window.setDatabasePath(database.path());
     });
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::activationRequested, &window, [&window] {
         window.showNormal();
