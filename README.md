@@ -6,7 +6,7 @@ A C++20 / Qt 6 Widgets desktop application for unified network and internet mana
 
 The foundation and persistence stages (001–019) are implemented: application lifecycle, bounded asynchronous work, validated settings, privacy-safe event logging, network domain types, evidence metadata, SQLite migrations and repositories, saved workspace management, and observation retention controls.
 
-Native network collection and device configuration are subsequent stages. The interface marks unavailable and unverified features explicitly.
+Basic interface and address inventory is available through Qt’s native interface provider. Detailed OS-specific collection and configuration writes follow in subsequent stages. The interface marks unavailable and unverified features explicitly.
 
 ## Build
 
@@ -18,6 +18,8 @@ cmake --build --preset release
 ```
 
 Run `build/release/netraxis` on Linux, `build/release/netraxis.exe` on Windows, or the `build/release/netraxis.app` bundle on macOS. Windows builds using the Qt MSVC package require an MSVC developer shell. CI configures, builds and launches the app on all three systems using Qt 6.8.3.
+
+Use `--platform-report` to print the selected provider and observed interface count as JSON. It returns a nonzero exit code when the inventory cannot be read.
 
 ## Local data
 

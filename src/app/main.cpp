@@ -12,6 +12,10 @@
 #include "storage/CoreRepository.h"
 #include <memory>
 #include "ui/MainWindow.h"
+#include "platform/base/PlatformFactory.h"
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QTextStream>
 
 int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
@@ -22,7 +26,17 @@ int main(int argc, char *argv[]) {
     parser.setApplicationDescription("Unified network and internet management");
     parser.addHelpOption();
     parser.addVersionOption();
+    parser.addOption({"platform-report","Report the native network provider and interface count as JSON."});
     parser.process(app);
+    if(parser.isSet("platform-report")){
+        const auto backend=netraxis::createNetworkPlatform();
+        if(!backend){QTextStream(stdout)<<QJsonDocument(QJsonObject{{"status","unavailable"},{"error",backend.error().message}}).toJson(QJsonDocument::Compact)<<Qt::endl;return 2;}
+        const netraxis::TaskContext context(std::make_shared<std::atomic_bool>(false),QDeadlineTimer(10000));
+        const auto inventory=backend.value()->interfaces(context);
+        QJsonObject report{{"backend",backend.value()->descriptor().name},{"provider",backend.value()->descriptor().implementation},{"status",inventory?"observed":"unavailable"}};
+        if(inventory)report.insert("interfaces",int(inventory.value().size()));else report.insert("error",inventory.error().message);
+        QTextStream(stdout)<<QJsonDocument(report).toJson(QJsonDocument::Compact)<<Qt::endl;return inventory?0:2;
+    }
     netraxis::ApplicationLifecycle lifecycle;
     const auto state = lifecycle.start();
     if (state == netraxis::ApplicationLifecycle::Start::ActivatedExisting) return 0;
