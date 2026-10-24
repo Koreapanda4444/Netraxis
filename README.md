@@ -4,7 +4,11 @@
 
 A C++20 / Qt 6 Widgets desktop application for unified network and internet management.
 
-The foundation and persistence stages (001–019) are implemented: application lifecycle, bounded asynchronous work, validated settings, privacy-safe event logging, network domain types, evidence metadata, SQLite migrations and repositories, saved workspace management, and observation retention controls.
+The foundation, persistence and platform framework stages (001–028) are implemented: application lifecycle, bounded asynchronous work, validated settings, privacy-safe event logging, network domain types, evidence metadata, SQLite migrations and repositories, saved workspace management, and observation retention controls.
+
+The Overview displays the selected platform/provider, current process permission, per-feature support and collection results, observed interfaces and addresses, failure reasons, and snapshot freshness. Collection runs in the background with refresh/cancel controls. Available system event reports trigger a debounced refresh; these reports do not establish internet or service reachability.
+
+Backend operations are serialized per coordinator. Cancellation and deadlines are cooperative: synchronous native calls run off the UI thread and cannot be forcibly interrupted. Normalization preserves source/time metadata and marks invalid optional fields as partial evidence. Configuration transaction hooks capture restorable state, bind approval to the desired and recovery requests, reject state drift, and distinguish applied, restored, pending recovery, and restoration failure results. Native configuration writes remain unsupported in this stage.
 
 Basic interface and address inventory is available through Qt’s native interface provider. Detailed OS-specific collection and configuration writes follow in subsequent stages. The interface marks unavailable and unverified features explicitly.
 

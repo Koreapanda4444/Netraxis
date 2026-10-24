@@ -2,6 +2,7 @@
 #include "StatusSurface.h"
 #include "WorkspacePage.h"
 #include "StorageControls.h"
+#include "PlatformStatusPage.h"
 #include <QScrollArea>
 #include "core/Paths.h"
 #include "platform/SystemInfo.h"
@@ -72,8 +73,9 @@ QWidget *MainWindow::dashboard() {
     layout->addRow(tr("Operating system"), new QLabel(system.os));
     layout->addRow(tr("Kernel"), new QLabel(system.kernel));
     layout->addRow(tr("Architecture"), new QLabel(system.architecture));
-    layout->addRow(new StatusSurface({Availability::Unsupported, Verification::Unverified, tr("Network collection is unavailable in this build. No network health conclusion can be drawn.")},page));
-    return page;
+    auto *platform=new PlatformStatusPage(tasks_,settings_.operationTimeoutMs,page);layout->addRow(platform);
+    connect(this,&MainWindow::settingsChanged,platform,[this,platform]{platform->setTimeout(settings_.operationTimeoutMs);});
+    auto *scroll=new QScrollArea;scroll->setWidgetResizable(true);scroll->setFrameShape(QFrame::NoFrame);scroll->setWidget(page);return scroll;
 }
 QWidget *MainWindow::diagnostics() {
     auto *page = new QWidget;auto *layout = new QVBoxLayout(page);
