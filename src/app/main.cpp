@@ -4,6 +4,7 @@
 #include <QStatusBar>
 #include <QDebug>
 #include "ApplicationLifecycle.h"
+#include "core/Logger.h"
 #include "ui/MainWindow.h"
 
 int main(int argc, char *argv[]) {
@@ -27,6 +28,12 @@ int main(int argc, char *argv[]) {
         QMessageBox::critical(nullptr, "Netraxis", lifecycle.errorString());
         return 1;
     }
+    netraxis::Logger logger;
+    const auto logging = logger.open();
+    if (logging) logger.write(netraxis::LogLevel::Info, netraxis::LogEvent::Started);
+    QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::stopping, &app, [&logger] {
+        logger.write(netraxis::LogLevel::Info, netraxis::LogEvent::Stopping);
+    });
     netraxis::MainWindow window;
     QObject::connect(&lifecycle, &netraxis::ApplicationLifecycle::activationRequested, &window, [&window] {
         window.showNormal();
@@ -35,6 +42,7 @@ int main(int argc, char *argv[]) {
     });
     QObject::connect(&app, &QCoreApplication::aboutToQuit, &lifecycle, &netraxis::ApplicationLifecycle::shutdown);
     if (!lifecycle.errorString().isEmpty()) window.statusBar()->showMessage(lifecycle.errorString());
+    if (!logging) window.statusBar()->showMessage(logging.error().message);
     window.show();
     return app.exec();
 }
